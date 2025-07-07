@@ -1,5 +1,6 @@
 package io.github.mitohondriyaa.order.service;
 
+import io.github.mitohondriyaa.order.client.InventoryClient;
 import io.github.mitohondriyaa.order.dto.OrderRequest;
 import io.github.mitohondriyaa.order.dto.OrderResponse;
 import io.github.mitohondriyaa.order.model.Order;
@@ -13,16 +14,22 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class OrderService {
     private final OrderRepository orderRepository;
+    private final InventoryClient inventoryClient;
 
     public OrderResponse placeOrder(OrderRequest orderRequest) {
-        Order order = new Order();
-        order.setOrderNumber(UUID.randomUUID().toString());
-        order.setSkuCode(orderRequest.skuCode());
-        order.setPrice(orderRequest.price());
-        order.setQuantity(orderRequest.quantity());
+        if (inventoryClient.isInStock(orderRequest.skuCode(), orderRequest.quantity())) {
+            Order order = new Order();
+            order.setOrderNumber(UUID.randomUUID().toString());
+            order.setSkuCode(orderRequest.skuCode());
+            order.setPrice(orderRequest.price());
+            order.setQuantity(orderRequest.quantity());
 
-        orderRepository.save(order);
+            orderRepository.save(order);
 
-        return new OrderResponse(order.getId(),  order.getOrderNumber(), order.getSkuCode(), order.getPrice(), order.getQuantity());
+            return new OrderResponse(order.getId(), order.getOrderNumber(), order.getSkuCode(), order.getPrice(), order.getQuantity());
+        }
+        else {
+            throw new RuntimeException("Out of stock");
+        }
     }
 }
