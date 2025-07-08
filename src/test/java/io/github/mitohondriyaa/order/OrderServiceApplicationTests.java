@@ -1,5 +1,6 @@
 package io.github.mitohondriyaa.order;
 
+import io.github.mitohondriyaa.order.stub.InventoryClientStub;
 import io.restassured.RestAssured;
 import io.restassured.http.ContentType;
 import org.hamcrest.Matchers;
@@ -36,6 +37,8 @@ class OrderServiceApplicationTests {
 					"quantity": 1
 				}
 				""";
+
+		InventoryClientStub.stubInventoryCall("iPhone_15", 1);
 
 		RestAssured.given()
 				.contentType(ContentType.JSON)
