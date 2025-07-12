@@ -1,0 +1,50 @@
+package io.github.mitohondriyaa.order.config;
+
+import io.github.mitohondriyaa.order.client.InventoryClient;
+import jakarta.servlet.http.HttpServletRequest;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.http.client.ClientHttpRequestInterceptor;
+import org.springframework.web.client.RestClient;
+import org.springframework.web.client.support.RestClientAdapter;
+import org.springframework.web.context.request.RequestAttributes;
+import org.springframework.web.context.request.RequestContextHolder;
+import org.springframework.web.context.request.ServletRequestAttributes;
+import org.springframework.web.service.invoker.HttpServiceProxyFactory;
+
+
+@Configuration
+public class RestClientConfig {
+    @Value("${inventory.url}")
+    private String inventoryUrl;
+
+    @Bean
+    public ClientHttpRequestInterceptor authHeaderInterceptor() {
+        return (request, body, execution) -> {
+            RequestAttributes ra =  RequestContextHolder.getRequestAttributes();
+
+            if (ra instanceof ServletRequestAttributes requestAttributes) {
+                HttpServletRequest servletRequest = requestAttributes.getRequest();
+                String authHeader = servletRequest.getHeader("Authorization");
+
+                if (authHeader != null) {
+                    request.getHeaders().add("Authorization", authHeader);
+                }
+            }
+
+            return execution.execute(request, body);
+        };
+    }
+
+    @Bean
+    public InventoryClient inventoryClient(ClientHttpRequestInterceptor authHeaderInterceptor) {
+        RestClient restClient = RestClient.builder()
+            .baseUrl(inventoryUrl)
+            .requestInterceptor(authHeaderInterceptor)
+            .build();
+        RestClientAdapter restClientAdapter = RestClientAdapter.create(restClient);
+        HttpServiceProxyFactory httpServiceProxyFactory = HttpServiceProxyFactory.builderFor(restClientAdapter).build();
+        return httpServiceProxyFactory.createClient(InventoryClient.class);
+    }
+}
