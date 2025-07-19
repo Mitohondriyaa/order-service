@@ -1,0 +1,3 @@
+ALTER TABLE t_orders ADD email VARCHAR(255) NOT NULL;
+ALTER TABLE t_orders ADD first_name VARCHAR(255) NOT NULL;
+ALTER TABLE t_orders ADD last_name VARCHAR(255) NOT NULL;
