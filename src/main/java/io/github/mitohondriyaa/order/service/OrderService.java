@@ -3,6 +3,7 @@ package io.github.mitohondriyaa.order.service;
 import io.github.mitohondriyaa.order.client.InventoryClient;
 import io.github.mitohondriyaa.order.dto.OrderRequest;
 import io.github.mitohondriyaa.order.dto.OrderResponse;
+import io.github.mitohondriyaa.order.exception.OutOfStockException;
 import io.github.mitohondriyaa.order.model.Order;
 import io.github.mitohondriyaa.order.repository.OrderRepository;
 import lombok.RequiredArgsConstructor;
@@ -29,7 +30,7 @@ public class OrderService {
             return new OrderResponse(order.getId(), order.getOrderNumber(), order.getSkuCode(), order.getPrice(), order.getQuantity());
         }
         else {
-            throw new RuntimeException("Out of stock");
+            throw new OutOfStockException("Out of stock");
         }
     }
 }
