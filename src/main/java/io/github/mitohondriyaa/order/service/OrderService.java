@@ -3,10 +3,12 @@ package io.github.mitohondriyaa.order.service;
 import io.github.mitohondriyaa.order.client.InventoryClient;
 import io.github.mitohondriyaa.order.dto.OrderRequest;
 import io.github.mitohondriyaa.order.dto.OrderResponse;
+import io.github.mitohondriyaa.order.event.OrderPlacedEvent;
 import io.github.mitohondriyaa.order.model.Order;
 import io.github.mitohondriyaa.order.model.UserDetails;
 import io.github.mitohondriyaa.order.repository.OrderRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
 
 import java.util.UUID;
@@ -16,6 +18,7 @@ import java.util.UUID;
 public class OrderService {
     private final OrderRepository orderRepository;
     private final InventoryClient inventoryClient;
+    private final KafkaTemplate<String, OrderPlacedEvent> kafkaTemplate;
 
     public OrderResponse placeOrder(OrderRequest orderRequest) {
         if (inventoryClient.isInStock(orderRequest.skuCode(), orderRequest.quantity())) {
@@ -29,6 +32,14 @@ public class OrderService {
             order.setLastName(orderRequest.userDetails().lastName());
 
             orderRepository.save(order);
+
+            OrderPlacedEvent orderPlacedEvent = new OrderPlacedEvent();
+            orderPlacedEvent.setOrderNumber(order.getOrderNumber());
+            orderPlacedEvent.setEmail(order.getEmail());
+            orderPlacedEvent.setFirstName(order.getFirstName());
+            orderPlacedEvent.setLastName(order.getLastName());
+
+            kafkaTemplate.sendDefault(orderPlacedEvent);
 
             return new OrderResponse(
                 order.getId(),
