@@ -1,5 +1,6 @@
 package io.github.mitohondriyaa.order;
 
+import io.github.mitohondriyaa.order.config.TestSecurityConfig;
 import io.github.mitohondriyaa.order.stub.InventoryClientStub;
 import io.restassured.RestAssured;
 import io.restassured.http.ContentType;
@@ -10,11 +11,15 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.server.LocalServerPort;
 import org.springframework.boot.testcontainers.service.connection.ServiceConnection;
 import org.springframework.cloud.contract.wiremock.AutoConfigureWireMock;
+import org.springframework.context.annotation.Import;
+import org.springframework.test.context.ActiveProfiles;
 import org.testcontainers.containers.MySQLContainer;
 import org.testcontainers.junit.jupiter.Container;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @AutoConfigureWireMock(port = 0)
+@ActiveProfiles("test")
+@Import(TestSecurityConfig.class)
 class OrderServiceApplicationTests {
 	@Container
 	@ServiceConnection
