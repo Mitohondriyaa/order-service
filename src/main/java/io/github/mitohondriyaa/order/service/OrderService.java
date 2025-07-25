@@ -21,10 +21,10 @@ public class OrderService {
     private final KafkaTemplate<String, OrderPlacedEvent> kafkaTemplate;
 
     public OrderResponse placeOrder(OrderRequest orderRequest) {
-        if (inventoryClient.isInStock(orderRequest.skuCode(), orderRequest.quantity())) {
+        if (inventoryClient.isInStock(orderRequest.productId(), orderRequest.quantity())) {
             Order order = new Order();
             order.setOrderNumber(UUID.randomUUID().toString());
-            order.setSkuCode(orderRequest.skuCode());
+            order.setProductId(orderRequest.productId());
             order.setPrice(orderRequest.price());
             order.setQuantity(orderRequest.quantity());
             order.setEmail(orderRequest.userDetails().email());
@@ -44,7 +44,7 @@ public class OrderService {
             return new OrderResponse(
                 order.getId(),
                 order.getOrderNumber(),
-                order.getSkuCode(),
+                order.getProductId(),
                 order.getPrice(),
                 order.getQuantity(),
                 new UserDetails(

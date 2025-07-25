@@ -19,7 +19,7 @@ public class Order {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
     private String orderNumber;
-    private String skuCode;
+    private String productId;
     private BigDecimal price;
     private Integer quantity;
     private String email;
