@@ -1,6 +1,7 @@
 package io.github.mitohondriyaa.order.service;
 
 import io.github.mitohondriyaa.order.client.InventoryClient;
+import io.github.mitohondriyaa.order.client.ProductClient;
 import io.github.mitohondriyaa.order.dto.OrderRequest;
 import io.github.mitohondriyaa.order.dto.OrderResponse;
 import io.github.mitohondriyaa.order.event.OrderPlacedEvent;
@@ -12,6 +13,7 @@ import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.stereotype.Service;
 
+import java.math.BigDecimal;
 import java.util.UUID;
 
 @Service
@@ -19,6 +21,7 @@ import java.util.UUID;
 public class OrderService {
     private final OrderRepository orderRepository;
     private final InventoryClient inventoryClient;
+    private final ProductClient productClient;
     private final KafkaTemplate<String, OrderPlacedEvent> kafkaTemplate;
 
     public OrderResponse placeOrder(OrderRequest orderRequest, Jwt jwt) {
@@ -26,7 +29,10 @@ public class OrderService {
             Order order = new Order();
             order.setOrderNumber(UUID.randomUUID().toString());
             order.setProductId(orderRequest.productId());
-            order.setPrice(orderRequest.price());
+            order.setPrice(
+                productClient.getProductPriceById(orderRequest.productId())
+                    .multiply(BigDecimal.valueOf(orderRequest.quantity()))
+            );
             order.setQuantity(orderRequest.quantity());
             order.setEmail(jwt.getClaimAsString("email"));
             order.setFirstName(jwt.getClaimAsString("given_name"));

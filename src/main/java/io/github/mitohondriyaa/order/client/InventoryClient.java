@@ -10,7 +10,7 @@ import org.springframework.web.service.annotation.GetExchange;
 public interface InventoryClient {
     Logger log = LoggerFactory.getLogger(InventoryClient.class);
 
-    @GetExchange("/api/inventory")
+    @GetExchange("/api/inventory/check")
     @CircuitBreaker(name = "inventoryServiceCircuitBreaker", fallbackMethod = "fallbackMethod")
     boolean isInStock(@RequestParam String productId, @RequestParam Integer quantity);
 

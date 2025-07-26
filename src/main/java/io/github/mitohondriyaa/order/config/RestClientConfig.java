@@ -1,6 +1,7 @@
 package io.github.mitohondriyaa.order.config;
 
 import io.github.mitohondriyaa.order.client.InventoryClient;
+import io.github.mitohondriyaa.order.client.ProductClient;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.http.client.ClientHttpRequestFactoryBuilder;
@@ -23,6 +24,8 @@ import java.time.Duration;
 public class RestClientConfig {
     @Value("${inventory.url}")
     private String inventoryUrl;
+    @Value("${product.url}")
+    private String productUrl;
 
     @Bean
     public ClientHttpRequestInterceptor authHeaderInterceptor() {
@@ -52,6 +55,18 @@ public class RestClientConfig {
         RestClientAdapter restClientAdapter = RestClientAdapter.create(restClient);
         HttpServiceProxyFactory httpServiceProxyFactory = HttpServiceProxyFactory.builderFor(restClientAdapter).build();
         return httpServiceProxyFactory.createClient(InventoryClient.class);
+    }
+
+    @Bean
+    public ProductClient productClient(ClientHttpRequestInterceptor authHeaderInterceptor) {
+        RestClient restClient = RestClient.builder()
+            .baseUrl(productUrl)
+            .requestInterceptor(authHeaderInterceptor)
+            .requestFactory(requestFactory())
+            .build();
+        RestClientAdapter restClientAdapter = RestClientAdapter.create(restClient);
+        HttpServiceProxyFactory httpServiceProxyFactory = HttpServiceProxyFactory.builderFor(restClientAdapter).build();
+        return httpServiceProxyFactory.createClient(ProductClient.class);
     }
 
     private ClientHttpRequestFactory requestFactory() {
