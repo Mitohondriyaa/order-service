@@ -4,6 +4,7 @@ import io.github.mitohondriyaa.order.client.InventoryClient;
 import io.github.mitohondriyaa.order.client.ProductClient;
 import io.github.mitohondriyaa.order.dto.OrderRequest;
 import io.github.mitohondriyaa.order.dto.OrderResponse;
+import io.github.mitohondriyaa.order.event.OrderCancelledEvent;
 import io.github.mitohondriyaa.order.event.OrderPlacedEvent;
 import io.github.mitohondriyaa.order.model.Order;
 import io.github.mitohondriyaa.order.model.UserDetails;
@@ -22,7 +23,8 @@ public class OrderService {
     private final OrderRepository orderRepository;
     private final InventoryClient inventoryClient;
     private final ProductClient productClient;
-    private final KafkaTemplate<String, OrderPlacedEvent> kafkaTemplate;
+    private final KafkaTemplate<String, OrderPlacedEvent> orderPlacedEventKafkaTemplate;
+    private final KafkaTemplate<String, OrderCancelledEvent> orderCancelledEventKafkaTemplate;
 
     public OrderResponse placeOrder(OrderRequest orderRequest, Jwt jwt) {
         if (inventoryClient.isInStock(orderRequest.productId(), orderRequest.quantity())) {
@@ -46,7 +48,7 @@ public class OrderService {
             orderPlacedEvent.setFirstName(order.getFirstName());
             orderPlacedEvent.setLastName(order.getLastName());
 
-            kafkaTemplate.sendDefault(orderPlacedEvent);
+            orderPlacedEventKafkaTemplate.sendDefault(orderPlacedEvent);
 
             return new OrderResponse(
                 order.getId(),
