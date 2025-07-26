@@ -23,4 +23,10 @@ public class OrderController {
     ) {
         return orderService.placeOrder(orderRequest, jwt);
     }
+
+    @DeleteMapping("/{id}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void deleteOrderById(@PathVariable Long id) {
+        orderService.deleteOrderById(id);
+    }
 }

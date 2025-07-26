@@ -67,4 +67,8 @@ public class OrderService {
             throw new RuntimeException("Out of stock");
         }
     }
+
+    public void deleteOrderById(Long id) {
+        orderRepository.deleteById(id);
+    }
 }
