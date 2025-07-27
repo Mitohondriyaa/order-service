@@ -28,8 +28,7 @@ public class OrderService {
     private final OrderRepository orderRepository;
     private final InventoryClient inventoryClient;
     private final ProductClient productClient;
-    private final KafkaTemplate<String, OrderPlacedEvent> orderPlacedEventKafkaTemplate;
-    private final KafkaTemplate<String, OrderCancelledEvent> orderCancelledEventKafkaTemplate;
+    private final KafkaTemplate<String, Object> kafkaTemplate;
 
     public OrderResponse placeOrder(OrderRequest orderRequest, Jwt jwt) {
         if (inventoryClient.isInStock(orderRequest.productId(), orderRequest.quantity())) {
@@ -58,7 +57,7 @@ public class OrderService {
 
             log.info("Sending to Kafka: {}", orderPlacedEvent);
 
-            orderPlacedEventKafkaTemplate.sendDefault(orderPlacedEvent);
+            kafkaTemplate.sendDefault(orderPlacedEvent);
 
             return new OrderResponse(
                 order.getId(),
@@ -94,7 +93,7 @@ public class OrderService {
         orderCancelledEvent.setFirstName(order.getFirstName());
         orderCancelledEvent.setLastName(order.getLastName());
 
-        orderCancelledEventKafkaTemplate.send(
+        kafkaTemplate.send(
             "order-cancelled",
             orderCancelledEvent
         );
