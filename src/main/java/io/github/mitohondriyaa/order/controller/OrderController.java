@@ -9,6 +9,8 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
+
 @RestController
 @RequestMapping("/api/order")
 @RequiredArgsConstructor
@@ -22,6 +24,12 @@ public class OrderController {
         @AuthenticationPrincipal Jwt jwt
     ) {
         return orderService.placeOrder(orderRequest, jwt);
+    }
+
+    @GetMapping("/my")
+    @ResponseStatus(HttpStatus.OK)
+    public List<OrderResponse> getOrdersByUserId(@AuthenticationPrincipal Jwt jwt) {
+        return orderService.getOrdersByUserId(jwt.getSubject());
     }
 
     @DeleteMapping("/{id}")

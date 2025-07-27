@@ -16,6 +16,7 @@ import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
+import java.util.List;
 import java.util.UUID;
 
 @Service
@@ -77,5 +78,23 @@ public class OrderService {
 
     public void deleteOrderById(Long id) {
         orderRepository.deleteById(id);
+    }
+
+    public List<OrderResponse> getOrdersByUserId(String userId) {
+        return orderRepository.findByUserId(userId)
+            .stream()
+            .map(order -> new OrderResponse(
+                order.getId(),
+                order.getOrderNumber(),
+                order.getProductId(),
+                order.getPrice(),
+                order.getQuantity(),
+                new UserDetails(
+                    order.getEmail(),
+                    order.getFirstName(),
+                    order.getLastName()
+                )
+            ))
+            .toList();
     }
 }
