@@ -38,7 +38,7 @@ public class OrderController {
         return orderService.getOrderForUser(id, jwt.getSubject());
     }
 
-    @DeleteMapping("/{id}")
+    @DeleteMapping("/my/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void deleteOrderById(@PathVariable Long id) {
         orderService.deleteOrderById(id);
