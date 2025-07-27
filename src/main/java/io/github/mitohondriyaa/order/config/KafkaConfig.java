@@ -10,4 +10,9 @@ public class KafkaConfig {
     public NewTopic orderPlacedTopic() {
         return new NewTopic("order-placed", 3, (short) 2);
     }
+
+    @Bean
+    public NewTopic orderCancelledTopic() {
+        return new NewTopic("order-cancelled", 3, (short) 2);
+    }
 }

@@ -79,6 +79,26 @@ public class OrderService {
     }
 
     public void deleteOrderById(Long id) {
+        Order order = orderRepository.findById(id).orElseThrow(
+            () -> new ResponseStatusException(
+                HttpStatus.NOT_FOUND,
+                "Order with id %d not found".formatted(id)
+            )
+        );
+
+        OrderCancelledEvent orderCancelledEvent = new OrderCancelledEvent();
+        orderCancelledEvent.setOrderNumber(order.getOrderNumber());
+        orderCancelledEvent.setProductId(order.getProductId());
+        orderCancelledEvent.setQuantity(order.getQuantity());
+        orderCancelledEvent.setEmail(order.getEmail());
+        orderCancelledEvent.setFirstName(order.getFirstName());
+        orderCancelledEvent.setLastName(order.getLastName());
+
+        orderCancelledEventKafkaTemplate.send(
+            "order-cancelled",
+            orderCancelledEvent
+        );
+
         orderRepository.deleteById(id);
     }
 
