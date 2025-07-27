@@ -10,6 +10,7 @@ import io.github.mitohondriyaa.order.model.Order;
 import io.github.mitohondriyaa.order.model.UserDetails;
 import io.github.mitohondriyaa.order.repository.OrderRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.stereotype.Service;
@@ -19,6 +20,7 @@ import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class OrderService {
     private final OrderRepository orderRepository;
     private final InventoryClient inventoryClient;
@@ -39,14 +41,19 @@ public class OrderService {
             order.setEmail(jwt.getClaimAsString("email"));
             order.setFirstName(jwt.getClaimAsString("given_name"));
             order.setLastName(jwt.getClaimAsString("family_name"));
+            order.setUserId(jwt.getSubject());
 
             orderRepository.save(order);
 
             OrderPlacedEvent orderPlacedEvent = new OrderPlacedEvent();
             orderPlacedEvent.setOrderNumber(order.getOrderNumber());
+            orderPlacedEvent.setProductId(order.getProductId());
+            orderPlacedEvent.setQuantity(order.getQuantity());
             orderPlacedEvent.setEmail(order.getEmail());
             orderPlacedEvent.setFirstName(order.getFirstName());
             orderPlacedEvent.setLastName(order.getLastName());
+
+            log.info("Sending to Kafka: {}", orderPlacedEvent);
 
             orderPlacedEventKafkaTemplate.sendDefault(orderPlacedEvent);
 
