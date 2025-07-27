@@ -32,6 +32,12 @@ public class OrderController {
         return orderService.getOrdersByUserId(jwt.getSubject());
     }
 
+    @GetMapping("/my/{id}")
+    @ResponseStatus(HttpStatus.OK)
+    public OrderResponse getOrderForUser(@PathVariable Long id, @AuthenticationPrincipal Jwt jwt) {
+        return orderService.getOrderForUser(id, jwt.getSubject());
+    }
+
     @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void deleteOrderById(@PathVariable Long id) {

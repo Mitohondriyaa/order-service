@@ -11,9 +11,11 @@ import io.github.mitohondriyaa.order.model.UserDetails;
 import io.github.mitohondriyaa.order.repository.OrderRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpStatus;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.stereotype.Service;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.math.BigDecimal;
 import java.util.List;
@@ -96,5 +98,27 @@ public class OrderService {
                 )
             ))
             .toList();
+    }
+
+    public OrderResponse getOrderForUser(Long id, String userId) {
+        Order order = orderRepository.findByIdAndUserId(id, userId)
+            .orElseThrow(() -> new ResponseStatusException(
+                    HttpStatus.NOT_FOUND,
+                    "Order not found"
+                )
+            );
+
+        return new OrderResponse(
+            order.getId(),
+            order.getOrderNumber(),
+            order.getProductId(),
+            order.getPrice(),
+            order.getQuantity(),
+            new UserDetails(
+                order.getEmail(),
+                order.getFirstName(),
+                order.getLastName()
+            )
+        );
     }
 }
