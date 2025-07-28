@@ -1,6 +1,7 @@
 package io.github.mitohondriyaa.order;
 
 import io.github.mitohondriyaa.order.stub.InventoryClientStub;
+import io.github.mitohondriyaa.order.stub.ProductClientStub;
 import io.restassured.RestAssured;
 import io.restassured.http.ContentType;
 import org.hamcrest.Matchers;
@@ -11,16 +12,23 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.server.LocalServerPort;
 import org.springframework.boot.testcontainers.service.connection.ServiceConnection;
 import org.springframework.cloud.contract.wiremock.AutoConfigureWireMock;
+import org.springframework.security.oauth2.jwt.Jwt;
+import org.springframework.security.oauth2.jwt.JwtDecoder;
+import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.MySQLContainer;
 import org.testcontainers.containers.Network;
 import org.testcontainers.containers.wait.strategy.Wait;
 import org.testcontainers.kafka.ConfluentKafkaContainer;
 
+import static org.mockito.Mockito.*;
+
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @AutoConfigureWireMock(port = 0)
+@ActiveProfiles("test")
 class OrderServiceApplicationTests {
 	static Network network = Network.newNetwork();
 	@ServiceConnection
@@ -44,6 +52,8 @@ class OrderServiceApplicationTests {
 		.waitingFor(Wait.forHttp("/subjects"));
 	@LocalServerPort
 	Integer port;
+	@MockitoBean
+	JwtDecoder jwtDecoder;
 
 	static {
 		mySQLContainer.start();
@@ -65,33 +75,42 @@ class OrderServiceApplicationTests {
 
 	@Test
 	void shouldPlaceOrder() {
+		Jwt jwt = Jwt.withTokenValue("mock-token")
+			.header("alg", "none")
+			.claim("email", "test@example.com")
+			.claim("given_name", "Alexander")
+			.claim("family_name", "Sidorov")
+			.claim("sub", "h7g3hg383837h7733hf38h37")
+			.build();
+
+		when(jwtDecoder.decode(anyString())).thenReturn(jwt);
+
 		String requestBody = """
 			{
-				"skuCode": "iPhone_15",
-				"price": 799,
-				"quantity": 1,
-				"userDetails": {
-			        "email": "mitohondriyaa@gmail.com",
-			        "firstName": "Nikita",
-			        "lastName": "Dymko"
-			    }
+				"productId": "6885edd749327c54f0627f8b",
+				"quantity": 1
 			}
 			""";
 
-		InventoryClientStub.stubInventoryCall("iPhone_15", 1);
+		InventoryClientStub.stubInventoryCall("6885edd749327c54f0627f8b", 1);
+		ProductClientStub.stubProductCall("6885edd749327c54f0627f8b");
 
 		RestAssured.given()
-				.contentType(ContentType.JSON)
-				.body(requestBody)
-				.when()
-				.post("/api/order")
-				.then()
-				.statusCode(201)
-				.body("id", Matchers.notNullValue())
-				.body("orderNumber", Matchers.notNullValue())
-				.body("skuCode", Matchers.is("iPhone_15"))
-				.body("price", Matchers.is(799))
-				.body("quantity", Matchers.is(1));
+			.contentType(ContentType.JSON)
+			.header("Authorization", "Bearer mock-token")
+			.body(requestBody)
+			.when()
+			.post("/api/order")
+			.then()
+			.statusCode(201)
+			.body("id", Matchers.notNullValue())
+			.body("orderNumber", Matchers.notNullValue())
+			.body("productId", Matchers.is("6885edd749327c54f0627f8b"))
+			.body("price", Matchers.is(500))
+			.body("quantity", Matchers.is(1))
+			.body("userDetails.email", Matchers.is("test@example.com"))
+			.body("userDetails.firstName", Matchers.is("Alexander"))
+			.body("userDetails.lastName", Matchers.is("Sidorov"));
 	}
 
 	@AfterAll
