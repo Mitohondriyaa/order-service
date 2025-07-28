@@ -8,6 +8,7 @@ import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.web.AuthenticationEntryPoint;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.access.AccessDeniedHandler;
 
 @Configuration
 @Profile("!test")
@@ -29,9 +30,24 @@ public class SecurityConfig {
     }
 
     @Bean
+    public AccessDeniedHandler accessDeniedHandler() {
+        return (request, response, accessDeniedException) -> {
+            response.setStatus(HttpStatus.FORBIDDEN.value());
+            response.setContentType("application/json");
+            response.getWriter().write("""
+                    {
+                        "code": "FORBIDDEN",
+                        "message": "User not authorized"
+                    }
+                """);
+        };
+    }
+
+    @Bean
     public SecurityFilterChain securityFilterChain(
         HttpSecurity http,
-        AuthenticationEntryPoint entryPoint
+        AuthenticationEntryPoint entryPoint,
+        AccessDeniedHandler handler
     ) throws Exception {
         return http
             .authorizeHttpRequests(authorize -> authorize
@@ -44,8 +60,9 @@ public class SecurityConfig {
                 .authenticated())
             .oauth2ResourceServer(oauth2 -> oauth2
                 .authenticationEntryPoint(entryPoint)
+                .accessDeniedHandler(handler)
                 .jwt(Customizer
                     .withDefaults()))
-           .build();
+            .build();
     }
 }
