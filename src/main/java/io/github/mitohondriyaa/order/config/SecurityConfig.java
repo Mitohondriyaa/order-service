@@ -3,15 +3,36 @@ package io.github.mitohondriyaa.order.config;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import org.springframework.security.web.AuthenticationEntryPoint;
 import org.springframework.security.web.SecurityFilterChain;
 
 @Configuration
 @Profile("!test")
 public class SecurityConfig {
     @Bean
-    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+    public AuthenticationEntryPoint authenticationEntryPoint() {
+        return (request, response, authException) -> {
+            response.setStatus(HttpStatus.UNAUTHORIZED.value());
+            response.setContentType("application/json");
+            response.getWriter().write(
+                """
+                    {
+                        "code": "UNAUTHORIZED",
+                        "message": "User not authenticated"
+                    }
+                    """
+            );
+        };
+    }
+
+    @Bean
+    public SecurityFilterChain securityFilterChain(
+        HttpSecurity http,
+        AuthenticationEntryPoint entryPoint
+    ) throws Exception {
         return http
             .authorizeHttpRequests(authorize -> authorize
                 .requestMatchers(
@@ -22,8 +43,9 @@ public class SecurityConfig {
                 .anyRequest()
                 .authenticated())
             .oauth2ResourceServer(oauth2 -> oauth2
+                .authenticationEntryPoint(entryPoint)
                 .jwt(Customizer
                     .withDefaults()))
-            .build();
+           .build();
     }
 }
