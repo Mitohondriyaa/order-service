@@ -11,7 +11,6 @@ import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.access.AccessDeniedHandler;
 
 @Configuration
-@Profile("!test")
 public class SecurityConfig {
     @Bean
     public AuthenticationEntryPoint authenticationEntryPoint() {
