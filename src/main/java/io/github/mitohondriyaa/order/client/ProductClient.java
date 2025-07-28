@@ -16,7 +16,7 @@ public interface ProductClient {
     @CircuitBreaker(name = "productServiceCircuitBreaker", fallbackMethod = "fallbackMethod")
     BigDecimal getProductPriceById(@PathVariable String id);
 
-    default void fallbackMethod(String id, Throwable throwable) {
+    default BigDecimal fallbackMethod(String id, Throwable throwable) {
         log.info("Cannot invoke product service for productId {}, failure reason: {}", id, throwable.getMessage());
         throw new ServiceUnavailableException("Service unavailable, please try again later");
     }
