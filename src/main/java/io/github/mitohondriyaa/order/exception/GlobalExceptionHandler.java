@@ -8,6 +8,15 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 @RestControllerAdvice
 public class GlobalExceptionHandler {
     @ExceptionHandler
+    public ResponseEntity<Info> handleNotFoundException(
+        NotFoundException exception
+    ) {
+        Info info = new Info(exception.getMessage());
+
+        return new ResponseEntity<>(info, HttpStatus.NOT_FOUND);
+    }
+
+    @ExceptionHandler
     public ResponseEntity<Info> handleOutOfStockExceptions(
         OutOfStockException exception
     ) {

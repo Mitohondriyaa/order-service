@@ -6,6 +6,8 @@ import io.github.mitohondriyaa.order.dto.OrderRequest;
 import io.github.mitohondriyaa.order.dto.OrderResponse;
 import io.github.mitohondriyaa.order.event.OrderCancelledEvent;
 import io.github.mitohondriyaa.order.event.OrderPlacedEvent;
+import io.github.mitohondriyaa.order.exception.NotFoundException;
+import io.github.mitohondriyaa.order.exception.OutOfStockException;
 import io.github.mitohondriyaa.order.model.Order;
 import io.github.mitohondriyaa.order.model.UserDetails;
 import io.github.mitohondriyaa.order.repository.OrderRepository;
@@ -73,14 +75,13 @@ public class OrderService {
             );
         }
         else {
-            throw new RuntimeException("Out of stock");
+            throw new OutOfStockException("Out of stock");
         }
     }
 
     public void deleteOrderById(Long id) {
         Order order = orderRepository.findById(id).orElseThrow(
-            () -> new ResponseStatusException(
-                HttpStatus.NOT_FOUND,
+            () -> new NotFoundException(
                 "Order with id %d not found".formatted(id)
             )
         );
@@ -121,8 +122,7 @@ public class OrderService {
 
     public OrderResponse getOrderForUser(Long id, String userId) {
         Order order = orderRepository.findByIdAndUserId(id, userId)
-            .orElseThrow(() -> new ResponseStatusException(
-                    HttpStatus.NOT_FOUND,
+            .orElseThrow(() -> new NotFoundException(
                     "Order not found"
                 )
             );
