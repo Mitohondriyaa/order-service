@@ -1,22 +1,29 @@
 package io.github.mitohondriyaa.order;
 
+import io.github.mitohondriyaa.order.event.OrderPlacedEvent;
 import io.github.mitohondriyaa.order.stub.InventoryClientStub;
 import io.github.mitohondriyaa.order.stub.ProductClientStub;
 import io.restassured.RestAssured;
 import io.restassured.http.ContentType;
+import org.apache.kafka.clients.consumer.Consumer;
+import org.apache.kafka.clients.consumer.ConsumerRecords;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.server.LocalServerPort;
 import org.springframework.boot.testcontainers.service.connection.ServiceConnection;
 import org.springframework.cloud.contract.wiremock.AutoConfigureWireMock;
+import org.springframework.kafka.core.ConsumerFactory;
+import org.springframework.kafka.test.utils.KafkaTestUtils;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
+import org.springframework.test.context.TestConstructor;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.MySQLContainer;
@@ -24,11 +31,15 @@ import org.testcontainers.containers.Network;
 import org.testcontainers.containers.wait.strategy.Wait;
 import org.testcontainers.kafka.ConfluentKafkaContainer;
 
+import java.time.Duration;
+import java.util.List;
+
 import static org.mockito.Mockito.*;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @AutoConfigureWireMock(port = 0)
 @ActiveProfiles("test")
+@TestConstructor(autowireMode = TestConstructor.AutowireMode.ALL)
 class OrderServiceApplicationTests {
 	static Network network = Network.newNetwork();
 	@ServiceConnection
@@ -54,6 +65,7 @@ class OrderServiceApplicationTests {
 	Integer port;
 	@MockitoBean
 	JwtDecoder jwtDecoder;
+	ConsumerFactory<String, OrderPlacedEvent> consumerFactory;
 
 	static {
 		mySQLContainer.start();
@@ -61,9 +73,15 @@ class OrderServiceApplicationTests {
 		schemaRegistryContainer.start();
 	}
 
+	OrderServiceApplicationTests(ConsumerFactory<String, OrderPlacedEvent> consumerFactory) {
+		this.consumerFactory = consumerFactory;
+	}
+
 	@DynamicPropertySource
 	static void dynamicProperties(DynamicPropertyRegistry registry) {
 		registry.add("spring.kafka.producer.properties.schema.registry.url",
+			() -> "http://localhost:" + schemaRegistryContainer.getMappedPort(8081));
+		registry.add("spring.kafka.consumer.properties.schema.registry.url",
 			() -> "http://localhost:" + schemaRegistryContainer.getMappedPort(8081));
 	}
 
@@ -111,6 +129,15 @@ class OrderServiceApplicationTests {
 			.body("userDetails.email", Matchers.is("test@example.com"))
 			.body("userDetails.firstName", Matchers.is("Alexander"))
 			.body("userDetails.lastName", Matchers.is("Sidorov"));
+
+		try (Consumer<String, OrderPlacedEvent> consumer = consumerFactory.createConsumer()) {
+			consumer.subscribe(List.of("order-placed"));
+
+			ConsumerRecords<String, OrderPlacedEvent> records =
+				KafkaTestUtils.getRecords(consumer, Duration.ofSeconds(5));
+
+			Assertions.assertFalse(records.isEmpty());
+		}
 	}
 
 	@AfterAll
