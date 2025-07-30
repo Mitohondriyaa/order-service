@@ -175,6 +175,29 @@ class OrderServiceApplicationTests {
 		Assertions.assertFalse(orderRepository.existsById(id));
 	}
 
+	@Test
+	void shouldGetOrdersByUserId() {
+		Order order = new Order();
+		order.setOrderNumber(UUID.randomUUID().toString());
+		order.setProductId(PRODUCT_ID);
+		order.setPrice(new BigDecimal(799));
+		order.setQuantity(1);
+		order.setEmail("test@example.com");
+		order.setFirstName("Alexander");
+		order.setLastName("Sidorov");
+		order.setUserId("h7g3hg383837h7733hf38h37");
+
+		orderRepository.save(order);
+
+		RestAssured.given()
+			.header("Authorization", "Bearer mock-token")
+			.when()
+			.get("/api/order/my")
+			.then()
+			.statusCode(200)
+			.body("size()", Matchers.is(1));
+	}
+
 	@AfterEach
 	void tearDown() {
 		orderRepository.deleteAll();
