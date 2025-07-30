@@ -13,6 +13,7 @@ import io.github.mitohondriyaa.order.model.UserDetails;
 import io.github.mitohondriyaa.order.repository.OrderRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.kafka.clients.producer.ProducerRecord;
 import org.springframework.http.HttpStatus;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.security.oauth2.jwt.Jwt;
@@ -59,7 +60,11 @@ public class OrderService {
 
             log.info("Sending to Kafka: {}", orderPlacedEvent);
 
-            kafkaTemplate.sendDefault(orderPlacedEvent);
+            ProducerRecord<String, Object> producerRecord
+                = new ProducerRecord<>("order-placed", orderPlacedEvent);
+            producerRecord.headers().add("messageId", UUID.randomUUID().toString().getBytes());
+
+            kafkaTemplate.send(producerRecord);
 
             return new OrderResponse(
                 order.getId(),
@@ -94,10 +99,11 @@ public class OrderService {
         orderCancelledEvent.setFirstName(order.getFirstName());
         orderCancelledEvent.setLastName(order.getLastName());
 
-        kafkaTemplate.send(
-            "order-cancelled",
-            orderCancelledEvent
-        );
+        ProducerRecord<String, Object> producerRecord
+            = new ProducerRecord<>("order-cancelled", orderCancelledEvent);
+        producerRecord.headers().add("messageId", UUID.randomUUID().toString().getBytes());
+
+        kafkaTemplate.send(producerRecord);
 
         orderRepository.deleteById(id);
     }
