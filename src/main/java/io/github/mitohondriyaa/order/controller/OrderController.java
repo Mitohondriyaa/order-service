@@ -40,7 +40,7 @@ public class OrderController {
 
     @DeleteMapping("/my/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void deleteOrderById(@PathVariable Long id) {
-        orderService.deleteOrderById(id);
+    public void deleteOrderById(@PathVariable Long id, @AuthenticationPrincipal Jwt jwt) {
+        orderService.deleteOrderById(id, jwt.getSubject());
     }
 }

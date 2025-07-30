@@ -84,8 +84,8 @@ public class OrderService {
         }
     }
 
-    public void deleteOrderById(Long id) {
-        Order order = orderRepository.findById(id).orElseThrow(
+    public void deleteOrderById(Long id, String userId) {
+        Order order = orderRepository.findByIdAndUserId(id, userId).orElseThrow(
             () -> new NotFoundException(
                 "Order with id %d not found".formatted(id)
             )
