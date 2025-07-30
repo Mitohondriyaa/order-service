@@ -198,6 +198,36 @@ class OrderServiceApplicationTests {
 			.body("size()", Matchers.is(1));
 	}
 
+	@Test
+	void shouldGetOrderForUser() {
+		Order order = new Order();
+		order.setOrderNumber(UUID.randomUUID().toString());
+		order.setProductId(PRODUCT_ID);
+		order.setPrice(new BigDecimal(799));
+		order.setQuantity(1);
+		order.setEmail("test@example.com");
+		order.setFirstName("Alexander");
+		order.setLastName("Sidorov");
+		order.setUserId("h7g3hg383837h7733hf38h37");
+
+		Long id = orderRepository.save(order).getId();
+
+		RestAssured.given()
+			.when()
+			.header("Authorization", "Bearer mock-token")
+			.get("/api/order/my/" + id)
+			.then()
+			.statusCode(200)
+			.body("id", Matchers.is(id.intValue()))
+			.body("orderNumber", Matchers.is(order.getOrderNumber()))
+			.body("productId", Matchers.is(order.getProductId()))
+			.body("price", Matchers.is(799.0F))
+			.body("quantity", Matchers.is(order.getQuantity()))
+			.body("userDetails.email", Matchers.is(order.getEmail()))
+			.body("userDetails.firstName", Matchers.is(order.getFirstName()))
+			.body("userDetails.lastName", Matchers.is(order.getLastName()));
+	}
+
 	@AfterEach
 	void tearDown() {
 		orderRepository.deleteAll();
