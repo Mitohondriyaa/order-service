@@ -1,21 +1,22 @@
 package io.github.mitohondriyaa.order;
 
 import io.github.mitohondriyaa.order.event.OrderPlacedEvent;
+import io.github.mitohondriyaa.order.model.Order;
+import io.github.mitohondriyaa.order.repository.OrderRepository;
 import io.github.mitohondriyaa.order.stub.InventoryClientStub;
 import io.github.mitohondriyaa.order.stub.ProductClientStub;
 import io.restassured.RestAssured;
 import io.restassured.http.ContentType;
+import lombok.RequiredArgsConstructor;
 import org.apache.kafka.clients.consumer.Consumer;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
 import org.hamcrest.Matchers;
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.*;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.server.LocalServerPort;
 import org.springframework.boot.testcontainers.service.connection.ServiceConnection;
 import org.springframework.cloud.contract.wiremock.AutoConfigureWireMock;
+import org.springframework.context.Lifecycle;
 import org.springframework.kafka.core.ConsumerFactory;
 import org.springframework.kafka.test.utils.KafkaTestUtils;
 import org.springframework.security.oauth2.jwt.Jwt;
@@ -31,8 +32,10 @@ import org.testcontainers.containers.Network;
 import org.testcontainers.containers.wait.strategy.Wait;
 import org.testcontainers.kafka.ConfluentKafkaContainer;
 
+import java.math.BigDecimal;
 import java.time.Duration;
 import java.util.List;
+import java.util.UUID;
 
 import static org.mockito.Mockito.*;
 
@@ -40,6 +43,7 @@ import static org.mockito.Mockito.*;
 @AutoConfigureWireMock(port = 0)
 @ActiveProfiles("test")
 @TestConstructor(autowireMode = TestConstructor.AutowireMode.ALL)
+@RequiredArgsConstructor
 class OrderServiceApplicationTests {
 	static Network network = Network.newNetwork();
 	@ServiceConnection
@@ -66,16 +70,13 @@ class OrderServiceApplicationTests {
 	Integer port;
 	@MockitoBean
 	JwtDecoder jwtDecoder;
-	ConsumerFactory<String, OrderPlacedEvent> consumerFactory;
+	final ConsumerFactory<String, OrderPlacedEvent> consumerFactory;
+	final OrderRepository orderRepository;
 
 	static {
 		mySQLContainer.start();
 		kafkaContainer.start();
 		schemaRegistryContainer.start();
-	}
-
-	OrderServiceApplicationTests(ConsumerFactory<String, OrderPlacedEvent> consumerFactory) {
-		this.consumerFactory = consumerFactory;
 	}
 
 	@DynamicPropertySource
@@ -139,6 +140,44 @@ class OrderServiceApplicationTests {
 
 			Assertions.assertFalse(records.isEmpty());
 		}
+	}
+
+	@Test
+	void shouldDeleteOrderById() {
+		Order order = new Order();
+		order.setOrderNumber(UUID.randomUUID().toString());
+		order.setProductId(PRODUCT_ID);
+		order.setPrice(new BigDecimal(799));
+		order.setQuantity(1);
+		order.setEmail("test@example.com");
+		order.setFirstName("Alexander");
+		order.setLastName("Sidorov");
+		order.setUserId("h7g3hg383837h7733hf38h37");
+
+		Long id = orderRepository.save(order).getId();
+
+		RestAssured.given()
+			.header("Authorization", "Bearer mock-token")
+			.when()
+			.delete("/api/order/my/" + id)
+			.then()
+			.statusCode(204);
+
+		try (Consumer<String, OrderPlacedEvent> consumer = consumerFactory.createConsumer()) {
+			consumer.subscribe(List.of("order-cancelled"));
+
+			ConsumerRecords<String, OrderPlacedEvent> records =
+				KafkaTestUtils.getRecords(consumer, Duration.ofSeconds(5));
+
+			Assertions.assertFalse(records.isEmpty());
+		}
+
+		Assertions.assertFalse(orderRepository.existsById(id));
+	}
+
+	@AfterEach
+	void tearDown() {
+		orderRepository.deleteAll();
 	}
 
 	@AfterAll

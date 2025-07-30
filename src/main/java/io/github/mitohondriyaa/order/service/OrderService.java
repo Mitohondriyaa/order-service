@@ -99,13 +99,13 @@ public class OrderService {
         orderCancelledEvent.setFirstName(order.getFirstName());
         orderCancelledEvent.setLastName(order.getLastName());
 
+        orderRepository.deleteById(id);
+
         ProducerRecord<String, Object> producerRecord
             = new ProducerRecord<>("order-cancelled", orderCancelledEvent);
         producerRecord.headers().add("messageId", UUID.randomUUID().toString().getBytes());
 
         kafkaTemplate.send(producerRecord);
-
-        orderRepository.deleteById(id);
     }
 
     public List<OrderResponse> getOrdersByUserId(String userId) {
