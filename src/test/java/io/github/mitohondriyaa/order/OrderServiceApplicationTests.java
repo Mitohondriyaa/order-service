@@ -61,6 +61,7 @@ class OrderServiceApplicationTests {
 		.withNetwork(network)
 		.withNetworkAliases("schema-registry")
 		.waitingFor(Wait.forHttp("/subjects"));
+	static final String PRODUCT_ID = "6885edd749327c54f0627f8b";
 	@LocalServerPort
 	Integer port;
 	@MockitoBean
@@ -89,10 +90,7 @@ class OrderServiceApplicationTests {
 	void setUp() {
 		RestAssured.baseURI = "http://localhost";
 		RestAssured.port = port;
-	}
 
-	@Test
-	void shouldPlaceOrder() {
 		Jwt jwt = Jwt.withTokenValue("mock-token")
 			.header("alg", "none")
 			.claim("email", "test@example.com")
@@ -102,16 +100,19 @@ class OrderServiceApplicationTests {
 			.build();
 
 		when(jwtDecoder.decode(anyString())).thenReturn(jwt);
+	}
 
+	@Test
+	void shouldPlaceOrder() {
 		String requestBody = """
 			{
-				"productId": "6885edd749327c54f0627f8b",
+				"productId": "%s",
 				"quantity": 1
 			}
-			""";
+			""".formatted(PRODUCT_ID);
 
-		InventoryClientStub.stubInventoryCall("6885edd749327c54f0627f8b", 1);
-		ProductClientStub.stubProductCall("6885edd749327c54f0627f8b");
+		InventoryClientStub.stubInventoryCall(PRODUCT_ID, 1);
+		ProductClientStub.stubProductCall(PRODUCT_ID);
 
 		RestAssured.given()
 			.contentType(ContentType.JSON)
@@ -145,5 +146,6 @@ class OrderServiceApplicationTests {
 		mySQLContainer.stop();
 		kafkaContainer.stop();
 		schemaRegistryContainer.stop();
+		network.close();
 	}
 }
