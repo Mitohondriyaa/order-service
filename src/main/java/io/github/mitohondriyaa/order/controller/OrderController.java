@@ -3,6 +3,7 @@ package io.github.mitohondriyaa.order.controller;
 import io.github.mitohondriyaa.order.dto.OrderRequest;
 import io.github.mitohondriyaa.order.dto.OrderResponse;
 import io.github.mitohondriyaa.order.service.OrderService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -20,7 +21,7 @@ public class OrderController {
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     public OrderResponse placeOrder(
-        @RequestBody OrderRequest orderRequest,
+        @Valid @RequestBody OrderRequest orderRequest,
         @AuthenticationPrincipal Jwt jwt
     ) {
         return orderService.placeOrder(orderRequest, jwt);
